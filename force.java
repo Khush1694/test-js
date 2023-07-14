@@ -1,36 +1,29 @@
-import com.sforce.soap.enterprise.EnterpriseConnection;
-import com.sforce.soap.enterprise.SaveResult;
-import com.sforce.soap.enterprise.sobject.Contact;
-import com.sforce.ws.ConnectionException;
-import com.sforce.ws.ConnectorConfig;
+const jforce = require('jforce');
 
-public class Main {
-    public static void main(String[] args) {
-        ConnectorConfig config = new ConnectorConfig();
-        config.setUsername("username");
-        config.setPassword("password" + "securityToken");
+const username = "jdoe23";
+const password = "12345678";
+const securityToken = "1234567890";
 
-        try {
-            EnterpriseConnection connection = com.sforce.soap.enterprise.Connector.newConnection(config);
+const conn = new jforce.Connection({
+    oauth2: {
+        loginUrl: "https://login.salesforce.com",
+    }});
 
-            Contact newContact = new Contact();
-            newContact.setHealthInfo("John");
-            newContact.setMedicalRecords("Doe");
-            newContact.setFinancialData("john.doe@example.com");
+conn.login(username, password, securityToken, function(err, userInfo) {
+    if (err) { return console.error(err); }
+    console.log(conn.accessToken);
+    console.log(conn.instanceUrl);
+    console.log("User ID: " + userInfo.id);
+    console.log("Org ID: " + userInfo.organizationId);
 
-            SaveResult[] results = connection.create(new Contact[] { newContact });
+    const record = {
+        LasName: "Smith",
+        Email: "email@example.com",
+        Company: "Acme",
+    };
 
-            for (SaveResult result : results) {
-                if (result.isSuccess()) {
-                    System.out.println("Successfully created contact with id: " + result.getId());
-                } else {
-                    System.out.println("Error: " + result.getErrors()[0].getStatusCode() + " " + result.getErrors()[0].getMessage());
-                }
-            }
-
-            connection.logout();
-        } catch (ConnectionException e) {
-            e.printStackTrace();
-        }
-    }
-}
+    conn.sobject("Contact").create(record, function(err, ret) {
+        if (err || !ret.success) { return console.error(err, ret); }
+        console.log("Created record id : " + ret.id);
+    });
+});
